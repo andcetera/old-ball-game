@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename field &apos;newGame&apos; in &apos;com.andcetera.screens.GameEndScreen&apos; to &apos;menu&apos;&#x0A;- Original project: &apos;BallsTheGame-core&apos;&#x0A;- Original element: &apos;com.andcetera.screens.GameEndScreen.newGame&apos;&#x0A;- Renamed element: &apos;com.andcetera.screens.GameEndScreen.menu&apos;&#x0A;- Update references to refactored element&#x0A;- Update textual occurrences in comments and strings" delegate="false" deprecate="false" description="Rename field &apos;newGame&apos;" flags="589826" getter="false" id="org.eclipse.jdt.ui.rename.field" input="/src&lt;com.andcetera.screens{GameEndScreen.java[GameEndScreen^newGame" name="menu" references="true" setter="false" stamp="1421007443732" textual="false" version="1.0"/>
+</session>

@@ -1,0 +1,604 @@
+package com.andcetera.screens;
+
+
+import com.andcetera.ballsgame.Assets;
+import com.andcetera.ballsgame.GameMain;
+import com.andcetera.objects.BigBall;
+import com.andcetera.objects.Fireball;
+import com.andcetera.objects.Paddle;
+import com.andcetera.objects.Prize;
+import com.andcetera.objects.SmallBall;
+import com.andcetera.objects.Square;
+import com.badlogic.gdx.Game;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input.Keys;
+import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.Application.ApplicationType;
+import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.BitmapFont.TextBounds;
+import com.badlogic.gdx.graphics.g2d.Sprite;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Circle;
+import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector3;
+
+public class GameScreen implements Screen {//implements InputProcessor or InputAdapter (need interface)
+	//Gdx.input.setInputProcessor(this);
+	
+	//Final game w/changelog, readme, zip and send
+	
+	public static boolean gameStarted;
+	
+	private GameMain game;
+	private OrthographicCamera camera;
+	private SpriteBatch batch;
+	private Vector3 touch, edges, ballPos;
+	private String scoreName;
+	private BitmapFont scoreFont, levelFont, fireFont;
+	
+	private boolean pause, ready, lose, firing, hit, fallingPz;
+	private int counter, tempscore, balls, level;
+	private long score;
+	private double bbSpeed, luck;
+	private int offscreen;
+
+	//private SmallBall[] ball;
+	private SmallBall ball;
+	private Paddle paddle;
+	private BigBall big;
+	private Square[] square;
+	private Prize prize;
+	//private ArrayList<Fireball> fBall;
+	private Fireball fBall;
+	private TextBounds fBounds;
+	
+	public GameScreen(GameMain game) { // constructor
+		this.setGame(game);
+		camera = new OrthographicCamera();
+		camera.setToOrtho(true, 1080, 1920);
+		//camera defaults to zero at center...
+		batch = new SpriteBatch();
+		touch = new Vector3();
+		ballPos = new Vector3();
+		edges = new Vector3(Gdx.graphics.getWidth(), Gdx.graphics.getHeight(), 0);
+		camera.unproject(edges);
+		
+		//MyInputProcessor inputProcessor = new MyInputProcessor();
+		//Gdx.input.setInputProcessor(inputProcessor);
+		//OR
+		/*
+		Gdx.input.setInputProcessor(new InputAdapter(){
+			@Override
+			   public boolean touchDown (int x, int y, int pointer, int button) {
+			      return false;
+			   }
+
+			   @Override
+			   public boolean touchUp (int x, int y, int pointer, int button) {
+			      return false;
+			   }
+
+			   @Override
+			   public boolean touchDragged (int x, int y, int pointer) {
+			      return false;
+			   }
+		});
+		*/
+		offscreen = -10000;
+		pause = false;
+		ready = false;
+		lose = false;
+		level = 1;
+		counter = 50;
+		score = 0;
+		tempscore = 0;
+		balls = 0;
+		firing = false;
+		hit = false;
+		fallingPz = false;
+		luck = 0.2;
+		bbSpeed = 0.1;
+		scoreName = "Score: 0";
+		scoreFont = new BitmapFont(Gdx.files.internal("fonts/score.fnt"), Gdx.files.internal("fonts/score.png"), true);
+		levelFont = new BitmapFont(Gdx.files.internal("fonts/balls.fnt"), Gdx.files.internal("fonts/balls.png"), true);
+		fireFont = new BitmapFont(Gdx.files.internal("fonts/score.fnt"), Gdx.files.internal("fonts/score.png"), true);
+		fireFont.setColor(Color.RED);
+		levelFont.setScale(2f);
+		Gdx.input.setCatchBackKey(true);
+
+		paddle = new Paddle(edges.x/2, edges.y);
+		big = new BigBall(edges.x/2, edges.y/7);
+		prize = new Prize(offscreen, offscreen);
+		//fBall = new ArrayList<Fireball>();	
+		fBall = new Fireball(offscreen, offscreen);
+		square = new Square[]{new Square(0, 0), new Square(0, 0)};
+		placeBlocks();
+	}
+
+	public void placeBlocks(){
+		float xPos = big.bounds.x;
+		float xPos1 = big.bounds.x;
+		while (xPos > big.bounds.x - big.bounds.radius - square[0].bounds.width / 2
+				&& xPos < big.bounds.x + big.bounds.radius + square[0].bounds.width / 2) {
+			xPos = (float) Math.random() * (edges.x - square[0].bounds.width)
+					+ square[0].bounds.width / 2;
+		}
+		while ((xPos1 > big.bounds.x - big.bounds.radius - square[1].bounds.width
+				/ 2 && xPos1 < big.bounds.x + big.bounds.radius
+				+ square[1].bounds.width / 2)
+				|| (xPos1 > xPos - square[1].bounds.width && xPos1 < xPos
+						+ square[1].bounds.width)) {
+			xPos1 = (float) Math.random() * (edges.x - square[1].bounds.width)
+					+ square[1].bounds.width / 2;
+		}
+		square[0].bounds.x = xPos;
+		square[0].bounds.y = (float) Math.random() * (edges.y/2)
+				+ square[0].bounds.height * 2;
+		square[1].bounds.x = xPos1;
+		square[1].bounds.y = (float) Math.random() * (edges.y/2)
+				+ square[1].bounds.height * 2;
+	}
+	
+	public void updateScore(long s){
+		score += s;
+		scoreName = "Score: " + score;
+	}
+	public void setScore(long s){
+		score = s;
+		scoreName = "Score: " + score;
+	}
+	public long getScore(){
+		return score;
+	}
+	
+	@Override
+	public void render(float delta) { 
+		Gdx.gl.glClearColor(0F, 0F, 0F, 1F);
+		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+				
+		touch = new Vector3();
+		camera.update();//like commit()
+		batch.setProjectionMatrix(camera.combined);// scale all
+		
+		//probably gamestate switch would be better here...
+		if(lose){
+			//explode ball animation?
+			((Game) Gdx.app.getApplicationListener()).setScreen(new GameEndScreen());
+		} else if (pause){
+			if(Gdx.input.justTouched()){
+				//unless touching menu button?
+				pause = false;
+			}
+		} else if (!ready){
+			if(Gdx.input.justTouched()){
+				//unless touching menu button?
+				ballPos.set(Gdx.input.getX(), Gdx.input.getY(), 0);
+				camera.unproject(ballPos);
+				ball = new SmallBall(ballPos.x, ballPos.y);
+				ball.speed.set(ball.speedMin, ball.speedMin);
+				ready = true;
+			}
+		} else {
+			generalUpdate(touch, camera);
+		}
+		
+		batch.begin();
+			batch.draw(Assets.background, 0, 0);
+			if(ready){
+				batch.draw(ball.image, ball.bounds.x - Assets.ballTex.getWidth()/2, ball.bounds.y - Assets.ballTex.getHeight()/2);
+			}
+			batch.draw(paddle.image, paddle.bounds.x - Assets.paddTex.getWidth()/2, paddle.bounds.y - Assets.paddTex.getHeight()/2);
+			for(int i = 0; i < square.length; i++){
+				batch.draw(square[i].image, square[i].bounds.x - square[i].bounds.width/2, square[i].bounds.y - square[i].bounds.height/2);
+			}
+			
+			if(tempscore < 20){
+				if(tempscore < 5){
+					drawBigBall(big.image, big.hit1);
+				} else if (tempscore < 9){
+					drawBigBall(big.hit1, big.hit2);
+				} else if (tempscore < 12){
+					drawBigBall(big.hit2, big.hit3);
+				} else if (tempscore < 15){
+					drawBigBall(big.hit3, big.hit4);
+				} else if (tempscore < 17){
+					drawBigBall(big.hit4, big.hit5);
+				} else if (tempscore < 19){
+					drawBigBall(big.hit5, big.hit6);
+				} else {
+					drawBigBall(big.hit6, big.hit6);
+				}
+			}
+			if(hit){
+				if(counter < 8){
+					batch.draw(big.fire1, big.bounds.x - Assets.fire1.getTexture().getWidth()/2, big.bounds.y - Assets.fire1.getTexture().getHeight()/2);
+				} else if(counter < 25 && counter % 3 != 0){
+					batch.draw(big.fire2, big.bounds.x - Assets.fire2.getTexture().getWidth()/2, big.bounds.y - Assets.fire2.getTexture().getHeight()/2);
+				} else if(counter < 32){
+					batch.draw(big.fire3, big.bounds.x - Assets.fire3.getTexture().getWidth()/2, big.bounds.y - Assets.fire3.getTexture().getHeight()/2);
+				} else {
+					batch.draw(big.fire4, big.bounds.x - Assets.fire4.getTexture().getWidth()/2, big.bounds.y - Assets.fire4.getTexture().getHeight()/2);
+				}
+			}
+			
+			if(counter % 2 == 0){
+				batch.draw(fBall.image1, fBall.bounds.x - Assets.fb1Tex.getWidth()/2, fBall.bounds.y - Assets.fb1Tex.getHeight()/2);
+			} else {
+				batch.draw(fBall.image2, fBall.bounds.x - Assets.fBall2.getTexture().getWidth()/2, fBall.bounds.y - Assets.fBall2.getTexture().getHeight()/3);
+			}
+						
+			if(balls > 0){
+				batch.draw(paddle.fLab, paddle.bounds.x - Assets.fLabTex.getWidth()/2, paddle.bounds.y- Assets.fLabTex.getHeight() * 3/2);
+			}
+			if(fallingPz){
+				batch.draw(prize.image, prize.bounds.x - Assets.przTex.getWidth()/2, prize.bounds.y - Assets.przTex.getHeight()/2);
+			}	
+			
+			scoreFont.draw(batch, scoreName, 30, 30);
+			if(balls > 0){
+				float xFont = fireFont.getBounds("Fireballs: " + balls).width;
+				fireFont.draw(batch, "Fireballs: " + balls, edges.x - xFont - 30, 30);
+			}
+			
+			TextBounds pFont = scoreFont.getBounds("Pause");
+			scoreFont.draw(batch, "Pause", square[0].bounds.x - pFont.width/2, square[0].bounds.y - pFont.height/2);
+			pFont = scoreFont.getBounds("Menu");
+			scoreFont.draw(batch, "Menu", square[1].bounds.x - pFont.width/2, square[1].bounds.y - pFont.height/2);
+			if(pause){
+				fBounds = levelFont.getBounds("PAUSED");
+				levelFont.draw(batch, "PAUSED", edges.x/2 - fBounds.width/2, edges.y/2 - fBounds.height);
+			}
+			if(!ready && !lose){
+				fBounds = levelFont.getBounds("Level " + level);
+				levelFont.draw(batch, "Level " + level, edges.x/2f - fBounds.width/2f, edges.y/2 - fBounds.height);
+			}
+		batch.end();
+		
+		 /* shapeRenderer.begin(ShapeType.Filled);
+		shapeRenderer.setColor(Color.RED);
+		shapeRenderer.circle(OBJ.getBoundingCircle().x, OBJ.getBoundingCircle().y, OBJ.getBoundingCircle().radius);
+		shapeRenderer.end();*/
+		
+	}
+	
+	
+	public void drawBigBall(Sprite image, Sprite imageNext){
+		if(counter > 20){
+			batch.draw(image, big.bounds.x - Assets.bigTex.getWidth()/2, big.bounds.y - Assets.bigTex.getHeight()/2);
+		} else {
+			batch.draw(imageNext, big.bounds.x - Assets.bigTex.getWidth()/2, big.bounds.y - Assets.bigTex.getHeight()/2);
+		}
+	}
+	
+	public boolean sqCollide(Rectangle r) {
+		//add Intersector.overlaps(cir, rect) stuff...
+		float left = r.x - r.width / 2;
+		float right = r.x + r.width / 2;
+		float top = r.y - r.height / 2;
+		float bottom = r.y + r.height / 2;
+
+		Circle b = ball.bounds;
+		float bLeft = b.x - b.radius;
+		float bRight = b.x + b.radius;
+		float bTop = b.y - b.radius;
+		float bBottom = b.y + b.radius;
+
+		if (bBottom > top && bTop < bottom) {
+			if (b.x < left && bRight >= left && ball.speed.x > 0) {
+				ball.bounds.x = left - b.radius;
+				ball.speed.x *= -1;
+				return true;
+			} else if (b.x > right && bLeft <= right && ball.speed.x < 0) {
+				ball.bounds.x = right + b.radius;
+				ball.speed.x *= -1;
+				return true;
+			}
+		}
+		if (bRight > left && bLeft < right) {
+			if (b.y < top && bBottom >= top && ball.speed.y > 0) {
+				ball.bounds.y = top - b.radius;
+				ball.speed.y *= -1;
+				return true;
+			} else if (b.y > bottom && bTop <= bottom && ball.speed.y < 0) {
+				ball.bounds.y = bottom + b.radius;
+				ball.speed.y *= -1;
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public boolean collide(Circle c){
+		if(ball.bounds.overlaps(c)){
+			float v = (float) Math.sqrt(ball.speed.x * ball.speed.x + ball.speed.y * ball.speed.y);
+			ball.speed.x = ball.bounds.x - c.x;
+			ball.speed.y = ball.bounds.y - c.y;
+			float newV = (float) Math.sqrt(ball.speed.x * ball.speed.x + ball.speed.y * ball.speed.y);
+			ball.speed.x *= v/newV;
+			ball.speed.y *= v/newV;
+			return true;
+		}
+		return false;
+	}
+	
+	public void checkTouch(){
+		if(Gdx.input.isKeyJustPressed(Keys.BACK)){
+			pause = true;
+			((Game) Gdx.app.getApplicationListener()).setScreen(GameMain.menu);
+		}
+
+		//how to check for drag here?
+		if (Gdx.input.justTouched()) {
+			touch.set(Gdx.input.getX(), Gdx.input.getY(), 0);
+			camera.unproject(touch);
+			
+			Rectangle sq = square[0].bounds;
+			if(touch.x > sq.x - sq.width && touch.x < sq.x + sq.width && touch.y > sq.y - sq.height && touch.y < sq.y + sq.height){
+				pause = true;
+			}
+			Rectangle sq2 = square[1].bounds;
+			if(touch.x > sq2.x - sq2.width && touch.x < sq2.x + sq2.width && touch.y > sq2.y - sq2.height && touch.y < sq2.y + sq2.height){
+				pause = true;
+				((Game) Gdx.app.getApplicationListener()).setScreen(GameMain.menu);	
+			}
+			
+			//more "tilt" options later
+			if(Math.abs(ball.speed.y/ball.speed.x) < 0.1){
+				if(ball.speed.y > 0){
+					ball.speed.y += 10;
+				} else {
+					ball.speed.y -= 10;
+				}
+			}
+			
+			//set to only fire on touchUp & not touchDown!
+			if(balls > 0 && !firing && touch.y >= edges.y - paddle.bounds.radius * 2){
+				fBall.bounds.x = paddle.bounds.x;
+				fBall.bounds.y = paddle.bounds.y - paddle.bounds.radius - fBall.bounds.radius/2;
+				fBall.shoot.play(GameMain.VOLUME);
+				fBall.crackle.play(GameMain.VOLUME, 0.5f, 0f);
+				firing = true;
+				balls--;
+			}
+		}
+	}
+	
+	public void generalUpdate(Vector3 touch, OrthographicCamera camera) {
+		checkTouch();
+		
+		//Paddle
+		if(Math.abs(Gdx.input.getAccelerometerX()) > 0.3){
+			paddle.bounds.x -= Gdx.input.getAccelerometerX() * Gdx.graphics.getDeltaTime() * GameMain.SENSE;
+		}
+		if(Gdx.app.getType() == ApplicationType.Desktop){
+			//work in drag/touch for movement! needed up there? ^^
+		}
+		if(paddle.bounds.x < 0) paddle.bounds.x = 0;
+		if (paddle.bounds.x > edges.x) paddle.bounds.x = edges.x;
+		if(ball.speed.y > 0 || Math.abs(ball.speed.y/ball.speed.x) < 0.1){
+			if(collide(paddle.bounds)){
+				paddle.hit.play(GameMain.VOLUME);
+			}
+		}
+		
+		//Squares, etc
+		for(int i = 0; i < square.length; i++){
+			if(sqCollide(square[i].bounds)){
+				square[i].hit.play(GameMain.VOLUME);
+				if(!fallingPz){
+					double pz = Math.random() * 100;
+					if (pz <= 75) {
+						prize.bounds.x = square[i].bounds.x;
+						prize.bounds.y = square[i].bounds.y + square[i].bounds.height/2
+								+ prize.bounds.radius;
+						fallingPz = true;
+					}
+				}
+			}
+		}
+		//Prizes
+		if(fallingPz){
+			prize.bounds.y += 1 + bbSpeed;
+			if ((prize.bounds.y + prize.bounds.radius/2 > edges.y - paddle.bounds.radius
+					&& paddle.bounds.x > prize.bounds.x - prize.bounds.radius && 
+					paddle.bounds.x < prize.bounds.x + prize.bounds.radius)
+					|| (ball.bounds.x > prize.bounds.x - prize.bounds.radius
+							&& ball.bounds.x < prize.bounds.x + prize.bounds.radius
+							&& ball.bounds.y > prize.bounds.y - prize.bounds.radius && ball.bounds.y
+							< prize.bounds.y + prize.bounds.radius)) {
+				if (prize.bounds.y + prize.bounds.radius/2 > edges.y - paddle.bounds.radius) {
+					updateScore(5);
+				} else {
+					updateScore(10);
+				}
+				prize.bounds.x = offscreen;
+				prize.bounds.y = offscreen;
+				double r = Math.random();
+				if (r <= luck) {
+					balls += 1;
+					fBall.crackle.play(GameMain.VOLUME, 2.0f, 0f);
+				} else {
+					prize.bling.play(GameMain.VOLUME);
+				}
+				fallingPz = false;
+
+			} else if (prize.bounds.y - prize.bounds.radius > edges.y) {
+				prize.bounds.x = offscreen;
+				prize.bounds.y = offscreen;
+				fallingPz = false;
+			}
+		}
+		//Fire balls
+		if (fBall.bounds.x > big.bounds.x - big.bounds.radius
+				&& fBall.bounds.x < big.bounds.x + big.bounds.radius
+				&& fBall.bounds.y < big.bounds.y + big.bounds.radius) {
+			hit = true;
+			updateScore(1);
+			tempscore++;
+			big.burn.play(GameMain.VOLUME);
+			counter = 0;
+			fBall.bounds.x = offscreen;
+			fBall.bounds.y = offscreen;
+			firing = false;
+		}
+		if (firing) {
+			if (fBall.bounds.y > -fBall.bounds.radius) {
+				fBall.bounds.y -= 12;
+			} else {
+				fBall.bounds.x = offscreen;
+				fBall.bounds.y = offscreen;
+				firing = false;
+			}
+		}
+		if (hit && counter > 40) {
+			hit = false;
+		}
+		
+		//Big Ball
+		if (collide(big.bounds)) {
+			updateScore(1);
+			big.hit.play(GameMain.VOLUME);
+			tempscore++;
+			if (ball.speed.x > 0) {
+				ball.speed.x += 15;
+			} else {
+				ball.speed.x -= 15;
+			}
+			if (ball.speed.y > 0) {
+				ball.speed.y += 15;
+			} else {
+				ball.speed.y -= 15;
+			}
+			counter = 0;
+		}
+		if(counter > 20 && !hit){
+			big.bounds.y += bbSpeed;
+		} else if (big.bounds.y >= edges.y / 7){
+			big.bounds.y -= bbSpeed * 15; //1.5f + (float) level / 10;
+		}
+		
+		//Walls
+				if((ball.bounds.x + ball.bounds.radius/2 >= edges.x && ball.speed.x >= 0) || (ball.bounds.x - ball.bounds.radius/2 <= 0 && ball.speed.x <= 0)){
+					ball.speed.x *= -1;
+					ball.bounce.play(GameMain.VOLUME, 0.7f, 0f);
+				}
+				if(ball.bounds.y - ball.bounds.radius/2 <= 0 && ball.speed.y <= 0){
+					ball.speed.y *= -1;
+					ball.bounce.play(GameMain.VOLUME, 0.7f, 0f);
+				}
+		//Fall thru
+		if(ball.bounds.y >= edges.y && ball.speed.y >= 0){
+			ball.bounds.y = ball.bounds.radius*2;
+			ball.woosh.play(GameMain.VOLUME, 0.7f, 0f);
+			if (fallingPz) {
+				prize.bounds.y = edges.y - offscreen;
+				prize.fall.play(GameMain.VOLUME);
+			}
+			
+			if (firing) {
+				firing = false;
+				fBall.bounds.x = offscreen;
+				fBall.bounds.y = offscreen;
+				fBall.crackle.stop();
+				fBall.fizzle.play(GameMain.VOLUME, 1.5f, 0f);
+			}
+			if(ball.bounds.x >= edges.x/2){
+				ball.speed.set(ball.speedMin, ball.speedMin);
+			} else {
+				ball.speed.set(-ball.speedMin, ball.speedMin);
+			}
+		}
+		//Update ball
+		ball.bounds.x += ball.speed.x * Gdx.graphics.getDeltaTime();
+		ball.bounds.y += ball.speed.y * Gdx.graphics.getDeltaTime();
+		counter++;
+		
+		//Lose
+		if (big.bounds.y >= edges.y - big.bounds.radius) {
+			tempscore = 0;
+			GameMain.SCORE = score;
+			Assets.lose.play(GameMain.VOLUME);
+			lose = true;
+		}
+		
+		//Win
+		if(tempscore >= 20){
+			Assets.win.play(GameMain.VOLUME);
+			if(fallingPz){
+				updateScore(10);
+				prize.bounds.x = offscreen;
+				prize.bounds.y = offscreen;
+				prize.bling.play(GameMain.VOLUME);
+				fallingPz = false;
+			}
+			//animate bonus scores, 500 level up, 10 x fireballs, etc
+			tempscore = 0;
+			level ++;
+			if(level % 2 == 0){
+				bbSpeed += 0.02;
+			}
+			score += 500;
+			big.bounds.y = edges.y/7;
+			ball.speedMin += 60;
+			if(level <= 20 && level % 4 == 0){
+				luck -= 0.01;
+			}
+			placeBlocks();
+			ready = false;
+		}
+		
+	}
+
+	
+	@Override
+	public void show() { // initialize?
+		gameStarted = true;
+		
+		// Sounds
+		// Assets.blip.play();//only plays once on opening
+		// also .loop, .pitch, etc
+
+	}
+
+	@Override
+	public void pause() {// onPause Android
+		if(ready){
+			pause = true;
+		}
+	}
+
+	@Override
+	public void resume() {// onResume Android
+
+	}
+
+	@Override
+	public void dispose() {// on Destroy (all)
+		if(gameStarted) Assets.disposeAll();
+		batch.dispose();
+		scoreFont.dispose();
+		levelFont.dispose();
+		fireFont.dispose();
+	}
+
+	@Override
+	public void resize(int width, int height) {// not needed w/camera
+
+	}
+
+	@Override
+	public void hide() {//if back to another screen...
+
+	}
+
+	public GameMain getGame() {
+		return game;
+	}
+
+	public void setGame(GameMain game) {
+		this.game = game;
+	}
+}

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<workingSetManager>
+<workingSet editPageId="org.eclipse.jdt.ui.JavaWorkingSetPage" factoryID="org.eclipse.ui.internal.WorkingSetFactory" id="1420666913195_1" label="libGDXProject" name="libGDXProject">
+<item elementID="=BallsTheGame-desktop" factoryID="org.eclipse.jdt.ui.PersistableJavaElementFactory"/>
+<item elementID="=BallsTheGame-android" factoryID="org.eclipse.jdt.ui.PersistableJavaElementFactory"/>
+<item elementID="=libGDXProject" factoryID="org.eclipse.jdt.ui.PersistableJavaElementFactory"/>
+<item elementID="=BallsTheGame-core" factoryID="org.eclipse.jdt.ui.PersistableJavaElementFactory"/>
+</workingSet>
+<workingSet aggregate="true" factoryID="org.eclipse.ui.internal.WorkingSetFactory" id="1420666507815_0" label="Window Working Set" name="Aggregate for window 1420666507814"/>
+<workingSet aggregate="true" factoryID="org.eclipse.ui.internal.WorkingSetFactory" id="1420669794441_2" label="Window Working Set" name="Aggregate for window 1420669794441"/>
+<workingSet aggregate="true" factoryID="org.eclipse.ui.internal.WorkingSetFactory" id="1421004078646_3" label="Window Working Set" name="Aggregate for window 1421004078646"/>
+<workingSet aggregate="true" factoryID="org.eclipse.ui.internal.WorkingSetFactory" id="1421114216129_4" label="Window Working Set" name="Aggregate for window 1421114216129"/>
+<workingSet aggregate="true" factoryID="org.eclipse.ui.internal.WorkingSetFactory" id="1425182575685_5" label="Window Working Set" name="Aggregate for window 1425182575685"/>
+<workingSet aggregate="true" factoryID="org.eclipse.ui.internal.WorkingSetFactory" id="1425183365837_6" label="Window Working Set" name="Aggregate for window 1425183365837"/>
+<workingSet aggregate="true" factoryID="org.eclipse.ui.internal.WorkingSetFactory" id="1429642719560_7" label="Window Working Set" name="Aggregate for window 1429642719560"/>
+<workingSet aggregate="true" factoryID="org.eclipse.ui.internal.WorkingSetFactory" id="1432251913981_8" label="Window Working Set" name="Aggregate for window 1432251913981"/>
+</workingSetManager>

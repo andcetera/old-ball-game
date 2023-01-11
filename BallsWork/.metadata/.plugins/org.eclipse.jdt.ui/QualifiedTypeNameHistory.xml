@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<qualifiedTypeNameHistroy>
+<fullyQualifiedTypeName name="com.badlogic.gdx.scenes.scene2d.Actor"/>
+<fullyQualifiedTypeName name="com.badlogic.gdx.Input.Keys"/>
+<fullyQualifiedTypeName name="com.badlogic.gdx.InputProcessor"/>
+<fullyQualifiedTypeName name="com.badlogic.gdx.input.GestureDetector.GestureListener"/>
+<fullyQualifiedTypeName name="com.badlogic.gdx.Application.ApplicationType"/>
+<fullyQualifiedTypeName name="com.andcetera.screens.GameScreen"/>
+</qualifiedTypeNameHistroy>
